@@ -51,11 +51,12 @@ Claude Code handles: tool execution, file edits, subagents, MCP. The harness han
 
 ## ROADMAP
 
-Milestone 1 is complete. The ordered implementation plan for Milestone 2 is in:
+Milestones 1 and 2 are complete (2026-06-26). The active roadmap is in:
 
-**[next-milestones.md](next-milestones.md)**
+- `projects/harness-v1/plan.md` - Milestone 3 scope and definition of done
+- `projects/harness-v1/handoff.md` - current state, open questions, momentum queues
 
-Read it at session start to know what to work on next. Each milestone there maps to a goal in `tasks.db`.
+Read handoff.md at session start before taking any action.
 
 ---
 
