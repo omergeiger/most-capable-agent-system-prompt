@@ -49,6 +49,16 @@ Claude Code handles: tool execution, file edits, subagents, MCP. The harness han
 
 ---
 
+## ROADMAP
+
+Milestone 1 is complete. The ordered implementation plan for Milestone 2 is in:
+
+**[next-milestones.md](next-milestones.md)**
+
+Read it at session start to know what to work on next. Each milestone there maps to a goal in `tasks.db`.
+
+---
+
 ## PROJECT FILE OS
 
 Maintain these files as the canonical durable state. Read them before acting. Update them during execution, not only at the end.
