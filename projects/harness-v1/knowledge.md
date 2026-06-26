@@ -92,6 +92,17 @@ pending -> blocked (depends_on task is blocked or failed)
 - Touch cloud CLIs
 - Self-modify approval or security policy
 
+## Milestone 1 Smoke Test - Learnings (2026-06-26)
+
+Closed-loop run completed successfully on 2026-06-26. Key observations:
+
+- `claude --print` (long form) is the correct non-interactive CLI flag. `-p` is the short alias. Both work.
+- Artifact directories use full UUID paths (`artifacts/<full-uuid>/`), not the 8-char prefix shown in claim_task list output. Scripts reference full IDs correctly.
+- SQLite WAL atomicity holds under 10-thread concurrency: exactly 1 of 10 concurrent UPDATE...RETURNING claims succeeds.
+- Verifier subagent independently re-ran assertions (subprocess execution) rather than trusting executor's self-report - the isolation is working as designed.
+- `create_goal.py` Claude decomposition: for a simple 2-part goal, Claude returned 3 tasks (implement, test, run) which is the right granularity.
+- Episodic log appends correctly; each entry captures goal_id, task description, verification outcome.
+
 ## Known Gaps (to close in Milestone 2+)
 
 - No skill profile loader yet (static skill files, manual loading)
