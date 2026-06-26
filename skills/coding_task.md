@@ -43,6 +43,14 @@ The verifier will check:
 - `risk_level = medium`: Edits to existing production files, dependency changes, schema migrations
 - `risk_level = high`: Anything that affects external APIs, auth, billing, data deletion, or production deploys - requires HITL gate
 
+## Checklist before marking done
+
+- [ ] Output file(s) exist on disk
+- [ ] Tests pass (or no tests exist and absence is justified)
+- [ ] No syntax errors in changed files
+- [ ] `completion_note.md` written to the task artifacts directory
+- [ ] No TODO comments left in any output file
+
 ## Failure Modes to Avoid
 
 - Editing unrelated files

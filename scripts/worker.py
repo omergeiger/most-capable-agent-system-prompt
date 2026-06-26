@@ -10,6 +10,7 @@ Usage: .venv/bin/python scripts/worker.py [--once] [--task-id TASK_ID]
 """
 import argparse
 import json
+import re
 import shutil
 import sqlite3
 import subprocess
@@ -89,14 +90,38 @@ def claim_task(conn: sqlite3.Connection, task_id: str | None = None) -> dict | N
     return dict(row) if row else None
 
 
-def load_skill_profiles(skill_tags: list[str]) -> str:
-    """Load relevant skill files based on task skill_tags."""
+def load_skill_profiles(skill_tags: list[str]) -> tuple[str, list[str]]:
+    """Load relevant skill files based on task skill_tags.
+
+    Parses the '**Trigger conditions:**' line from each skill file and matches
+    against the task's skill_tags. Returns (combined_content, loaded_file_names).
+    """
+    tag_set = {t.lower() for t in skill_tags}
+    loaded = []
     profiles = []
-    for tag in skill_tags:
-        skill_file = SKILLS_DIR / f"{tag}.md"
-        if skill_file.exists():
-            profiles.append(skill_file.read_text())
-    return "\n\n---\n\n".join(profiles) if profiles else ""
+
+    for skill_file in sorted(SKILLS_DIR.glob("*.md")):
+        content = skill_file.read_text()
+        triggers: set[str] = set()
+        for line in content.splitlines():
+            if "Trigger conditions:" in line:
+                # Extract all quoted tokens: **Trigger conditions:** ... "coding", "review" ...
+                for match in re.findall(r'"([^"]+)"', line):
+                    triggers.add(match.strip().lower())
+                # Fallback: if no quoted tokens, split after last colon on commas
+                if not triggers:
+                    after_colon = line.split(":", 1)[-1]
+                    for token in after_colon.split(","):
+                        t = re.sub(r"[^a-z0-9_]", "", token.strip().lower())
+                        if t:
+                            triggers.add(t)
+                break
+        if triggers & tag_set:
+            loaded.append(skill_file.name)
+            profiles.append(content)
+
+    combined = "\n\n---\n\n".join(profiles) if profiles else ""
+    return combined, loaded
 
 
 def build_executor_prompt(task: dict, skill_context: str) -> str:
@@ -164,19 +189,39 @@ def execute_task(task: dict) -> tuple[bool, str]:
     task_artifacts_dir.mkdir(parents=True, exist_ok=True)
 
     skill_tags = json.loads(task.get("skill_tags") or "[]")
-    skill_context = load_skill_profiles(skill_tags)
+    skill_context, loaded_skills = load_skill_profiles(skill_tags)
     prompt = build_executor_prompt(task, skill_context)
 
     log_path = LOGS_DIR / f"exec_{task['id']}.md"
+    skills_note = f"Skills loaded: {', '.join(loaded_skills)}" if loaded_skills else "Skills loaded: none"
+
+    tokens_used = 0
+    cost_usd = 0.0
+    duration_ms = 0
 
     try:
         result = subprocess.run(
-            ["claude", "--print", prompt],
+            ["claude", "--print", "--output-format", "json", prompt],
             capture_output=True, text=True,
             timeout=TASK_TIMEOUT, cwd=REPO_ROOT,
         )
         success = result.returncode == 0
-        output = result.stdout + (f"\n\nSTDERR:\n{result.stderr}" if result.stderr else "")
+        try:
+            parsed = json.loads(result.stdout)
+            output = parsed.get("result", result.stdout)
+            usage = parsed.get("usage", {})
+            tokens_used = (
+                usage.get("input_tokens", 0)
+                + usage.get("output_tokens", 0)
+                + usage.get("cache_read_input_tokens", 0)
+                + usage.get("cache_creation_input_tokens", 0)
+            )
+            cost_usd = parsed.get("total_cost_usd", 0.0) or 0.0
+            duration_ms = parsed.get("duration_ms", 0) or 0
+        except (json.JSONDecodeError, AttributeError):
+            output = result.stdout
+        if result.stderr:
+            output += f"\n\nSTDERR:\n{result.stderr}"
     except subprocess.TimeoutExpired:
         success = False
         output = "TIMEOUT: task exceeded 30 minutes"
@@ -185,29 +230,46 @@ def execute_task(task: dict) -> tuple[bool, str]:
         f"# Execution Log: {task['id']}\n\n"
         f"**Task:** {task['description']}\n"
         f"**Time:** {utcnow()}\n"
-        f"**Success:** {success}\n\n"
+        f"**Success:** {success}\n"
+        f"**{skills_note}**\n"
+        f"**Tokens used:** {tokens_used} | **Cost:** ${cost_usd:.4f} | **Duration:** {duration_ms}ms\n\n"
         f"## Output\n\n{output}\n"
     )
-    return success, str(log_path)
+    return success, str(log_path), tokens_used, cost_usd
 
 
-def verify_task(task: dict) -> tuple[bool, str]:
-    """Run verifier subagent. Returns (verified, reason)."""
+def verify_task(task: dict) -> tuple[bool, str, int, float]:
+    """Run verifier subagent. Returns (verified, reason, tokens_used, cost_usd)."""
     task_artifacts_dir = ARTIFACTS_DIR / task["id"]
     verification_file = task_artifacts_dir / "verification.md"
     prompt = build_verifier_prompt(task, task_artifacts_dir)
 
+    tokens_used = 0
+    cost_usd = 0.0
+
     try:
         result = subprocess.run(
-            ["claude", "--print", prompt],
+            ["claude", "--print", "--output-format", "json", prompt],
             capture_output=True, text=True,
             timeout=300, cwd=REPO_ROOT,
         )
+        try:
+            parsed = json.loads(result.stdout)
+            usage = parsed.get("usage", {})
+            tokens_used = (
+                usage.get("input_tokens", 0)
+                + usage.get("output_tokens", 0)
+                + usage.get("cache_read_input_tokens", 0)
+                + usage.get("cache_creation_input_tokens", 0)
+            )
+            cost_usd = parsed.get("total_cost_usd", 0.0) or 0.0
+        except (json.JSONDecodeError, AttributeError):
+            pass
     except subprocess.TimeoutExpired:
-        return False, "Verifier timed out"
+        return False, "Verifier timed out", 0, 0.0
 
     if not verification_file.exists():
-        return False, "Verifier did not write verification.md"
+        return False, "Verifier did not write verification.md", tokens_used, cost_usd
 
     content = verification_file.read_text()
     passed = "Status: PASS" in content
@@ -216,21 +278,23 @@ def verify_task(task: dict) -> tuple[bool, str]:
         if line.startswith("Reason:"):
             reason = line[7:].strip()
             break
-    return passed, reason
+    return passed, reason, tokens_used, cost_usd
 
 
 def update_task(conn: sqlite3.Connection, task_id: str, status: str,
-                evidence: dict | None = None, artifacts: list | None = None) -> None:
+                evidence: dict | None = None, artifacts: list | None = None,
+                tokens_used: int = 0) -> None:
     conn.execute("""
         UPDATE tasks
         SET status = ?, evidence = ?, artifacts = ?, updated_at = ?,
+            tokens_used = tokens_used + ?,
             completed_at = CASE WHEN ? IN ('done', 'failed') THEN ? ELSE completed_at END
         WHERE id = ?
     """, (
         status,
         json.dumps(evidence) if evidence else None,
         json.dumps(artifacts) if artifacts else None,
-        utcnow(), status, utcnow(), task_id,
+        utcnow(), tokens_used, status, utcnow(), task_id,
     ))
     conn.commit()
 
@@ -261,8 +325,11 @@ def run_once(conn: sqlite3.Connection, specific_task_id: str | None = None) -> b
     update_task(conn, task_id, "running")
 
     try:
-        success, log_path = execute_task(task)
-        verified, reason = verify_task(task)
+        success, log_path, exec_tokens, exec_cost = execute_task(task)
+        verified, reason, verify_tokens, verify_cost = verify_task(task)
+
+        total_tokens = exec_tokens + verify_tokens
+        total_cost = exec_cost + verify_cost
 
         if success and verified:
             final_status = "done"
@@ -278,12 +345,16 @@ def run_once(conn: sqlite3.Connection, specific_task_id: str | None = None) -> b
             "verification_reason": reason,
             "log_path": log_path,
             "attempt": task["attempts"],
+            "tokens_used": total_tokens,
+            "cost_usd": round(total_cost, 6),
         }
         artifacts_list = [str(ARTIFACTS_DIR / task_id)]
 
-        update_task(conn, task_id, final_status, evidence=evidence, artifacts=artifacts_list)
+        update_task(conn, task_id, final_status, evidence=evidence, artifacts=artifacts_list,
+                    tokens_used=total_tokens)
         append_episodic_memory(task, verified, reason)
-        print(f"[worker] Task {task_id[:8]} -> {final_status}. Verified: {verified}.")
+        cost_str = f"${total_cost:.4f}" if total_cost else "n/a"
+        print(f"[worker] Task {task_id[:8]} -> {final_status}. Verified: {verified}. Tokens: {total_tokens} ({cost_str})")
         print(f"         {reason}")
 
     except Exception as e:
