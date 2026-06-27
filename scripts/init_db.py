@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS goals (
     project_id TEXT,
     status TEXT NOT NULL DEFAULT 'active',
     trust_level TEXT NOT NULL DEFAULT 'supervised',
+    budget_limit REAL,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
@@ -101,6 +102,7 @@ CREATE INDEX IF NOT EXISTS idx_memory_type ON memory_entries(type);
 MIGRATIONS = [
     "ALTER TABLE tasks ADD COLUMN cost_usd REAL DEFAULT 0.0",
     "ALTER TABLE goals ADD COLUMN trust_level TEXT NOT NULL DEFAULT 'supervised'",
+    "ALTER TABLE goals ADD COLUMN budget_limit REAL",
 ]
 
 

@@ -94,6 +94,28 @@ Run the eval harness, get a pass rate, then make one improvement, re-run, and co
 
 ---
 
+## Milestone 4 - Autonomous Loop + Real Workloads
+
+**Target:** ~2026-07-14  
+**Status:** complete (2026-06-27)
+
+### Scope
+
+- [x] Trust-level gating enforced in worker.py (supervised/guided/autonomous behavior)
+- [x] Budget cap: goals.budget_limit enforced before each task run
+- [x] Scan dashboard: markdown summary artifact written on every scan run
+- [x] First guided-trust ops goal run by worker (3/5 tasks done before $0.50 cap)
+- [x] Cost alerting: task blocked when goal budget exceeded ($0.5301 > $0.50)
+- [x] Eval suite expanded to 3 evals: m3_features + m4_features + task_claim_atomicity (3/3 PASS)
+- [x] worker.py --goal-id flag: run all tasks for a specific goal
+- [x] worker.py --no-hitl flag: bypass HITL gates per invocation
+
+### Definition of Done
+
+Worker ran real ops goal `2c0f463d` in guided mode. Budget cap triggered at task 3. All 3 evals pass. Scan dashboard generated on every scan run.
+
+---
+
 ## Architecture Summary
 
 ```

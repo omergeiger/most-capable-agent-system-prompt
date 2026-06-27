@@ -1,77 +1,76 @@
 # Handoff - Harness v1
 
 **Session end:** 2026-06-27
-**Session summary:** Milestone 3 complete
+**Session summary:** Milestone 4 complete
 
 ---
 
 ## What Was Completed
 
-### Milestone 3 - Self-Improvement Loop + Proactive Monitoring (complete)
+### Milestone 4 - Autonomous Loop + Real Workloads (complete)
 
-| Item | Status | Path |
+| Item | Status | Notes |
 |---|---|---|
-| WAL research synthesis | done | artifacts/a07bd2bc-wal-synthesis/synthesis.md |
-| Task queue triage | done | 35 stale tasks cancelled, queue clean |
-| Schema migration: cost_usd on tasks | done | scripts/init_db.py (MIGRATIONS list) |
-| Schema migration: trust_level on goals | done | scripts/init_db.py (MIGRATIONS list), default 'supervised' |
-| Cost tracking in status.md | done | scripts/update_status.py (get_cost_by_goal) |
-| cost_usd wired into worker.py | done | scripts/worker.py (update_task signature) |
-| Trust level system | done | scripts/set_trust.py (supervised/guided/autonomous) |
-| Third domain: ops skill | done | skills/ops_task.md |
-| Recurring scan script | done | scripts/run_scan.sh (cron-ready shell wrapper) |
-| M3 features eval | done | evals/m3_features.py (5 checks, PASS) |
-| Self-improvement loop (real run) | done | evals/improvement_log.md (2/2 -> 2/2, kept) |
-| Eval suite | done | 2 evals: task_claim_atomicity + m3_features |
+| trust-level gating in worker.py | done | supervised/guided/autonomous logic, check_hitl_gate() |
+| budget enforcement in worker.py | done | check_budget(), blocks task when goal cost >= budget_limit |
+| worker --goal-id flag | done | run all tasks for a specific goal, exits when queue empty |
+| worker --no-hitl flag | done | bypass HITL gates per invocation |
+| goals.budget_limit column | done | schema migration in init_db.py |
+| scan dashboard in scan reports | done | build_dashboard() in scan.py, markdown table in every scan log |
+| Real ops goal in guided mode | done | goal 2c0f463d: 3/5 tasks done, budget cap triggered at $0.5301 |
+| m4_features.py eval | done | 5/5 PASS |
+| Full eval suite | done | 3/3 PASS: m3_features, m4_features, task_claim_atomicity |
 
 ---
 
 ## Current System State
 
-- **18 tasks done**, 35 cancelled, 2 failed (stale WAL benchmark tasks - irrelevant)
-- **Eval suite:** 2/2 passing
+- **21 tasks done**, 1 pending, 1 blocked (budget), 35 cancelled, 2 failed (stale)
+- **Eval suite:** 3/3 passing
 - **Skills:** coding, verification, research, review, planning, ops (6 total)
-- **Trust system:** all goals at 'supervised' (default), set_trust.py for promotion
-- **Cost tracking:** live in worker.py and status.md (historical rows show $0 - cost_usd column is new)
-- **WAL note:** PRAGMA journal_mode=WAL already in init_db.py SCHEMA - always was. Synthesis confirmed we're already doing the right thing.
+- **Trust levels:** supervised (default), guided (promoted via set_trust.py), autonomous
+- **Ops goal 2c0f463d:** budget exceeded at $0.5301/$0.50. Tasks 3+5 blocked/pending.
+  - Task 1 (venv check): DONE - Python 3.13.9, 6 stdlib deps, all OK
+  - Task 2 (import check): DONE - all 11 imported modules are stdlib, no third-party deps missing
+  - Task 4 (stale artifacts): DONE (ran independently, no depends_on conflict)
+  - Task 3 (syntax check): BLOCKED - budget exceeded
+  - Task 5 (summary report): PENDING - waiting on task 3
 
 ---
 
 ## What Is Next
 
-**Milestone 4** - Autonomous Loop + Real Workloads
+**Milestone 5** - suggested scope:
 
-Suggested scope (open for human to redirect):
-
-- Promote one goal to `guided` trust level and run worker non-interactively
-- Add a second task domain goal that uses the ops skill end-to-end
-- Add cost alerting: warn when a goal exceeds a budget threshold
-- External intelligence feed: pull a GitHub releases RSS or changelog (once network is unlocked)
-- Dashboard: auto-generate a markdown summary of all goals and their cost/status on each scan run
-- Verifier isolation enforcement: ensure all medium/high risk tasks route to separate subagent
+- Budget increase and complete the blocked ops goal (task 3 syntax check + task 5 report)
+- Recurring worker: `scripts/run_goal.sh` wrapper that runs a whole goal unattended
+- Second autonomous goal: promote a well-tested goal to `autonomous` trust
+- External handoff: export status/dashboard to a shareable format (HTML, Notion, etc.)
+- Self-improvement loop: run on a skill that has an actual eval regression, not just hold
+- Incident tracking: wire incidents table - create incident on task failure, link to goal
 
 ---
 
 ## What Is Blocked
 
-Nothing structurally blocked.
-
-Deferred: external intelligence feed (requires network access, currently blocked per CLAUDE.md).
+- Ops goal `2c0f463d` tasks 3+5: need budget_limit increased or goal re-run with higher cap.
+  To unblock: `python3 -c "import sqlite3; conn=sqlite3.connect('tasks.db'); conn.execute(\"UPDATE goals SET budget_limit=2.0 WHERE id='2c0f463d-71e1-4268-adad-1264d126a4ff'\"); conn.commit()"` then unlock task c7278421 and re-run worker.
+- Network access still blocked (external feed deferred).
 
 ---
 
 ## Open Questions for Human
 
-1. **Network unlock:** When (if ever) should the harness be allowed to make external HTTP calls? This gates the intelligence feed and any webhook/notification features.
-2. **Autonomous promotion:** Ready to promote any goal to `guided` trust level? Recommend starting with a low-risk ops goal (disk audit, log rotation).
-3. **Milestone 4 priority:** Cost alerting, second domain workload, or dashboard first?
+1. **Ops goal completion:** Increase budget for goal `2c0f463d` to finish syntax check + report?
+2. **Milestone 5 priority:** Incident tracking, autonomous trust goal, or external handoff?
+3. **Budget tuning:** $0.50 cap was too tight for a 5-task ops audit (~$0.10-0.30/task). Recommend $1.00-$2.00 for research/ops goals going forward.
 
 ---
 
 ## Momentum
 
-- **Now:** Nothing running (clean queue)
-- **Next:** Milestone 4 planning, first guided-trust ops task
-- **Blocked:** Network (external feed deferred)
-- **Improve:** cost_usd backfill for historical tasks (tokens_used data exists, cost can be estimated)
-- **Recurring:** Run `scripts/run_scan.sh` at session start to catch stale project state
+- **Now:** Nothing running (clean queue except 1 blocked + 1 pending from ops goal)
+- **Next:** Milestone 5 planning, unblock ops goal or start new goal
+- **Blocked:** Network (external feed); ops goal budget exceeded
+- **Improve:** Budget cap calibration (ops tasks cost ~$0.25-0.30 each)
+- **Recurring:** Run `scripts/run_scan.sh` at session start

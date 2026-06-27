@@ -1,0 +1,8 @@
+{
+  "eval": "m4_features",
+  "passed": true,
+  "duration_s": 0.06,
+  "stdout": "=== M4 Features Eval ===\n\nColumn check: goals.budget_limit exists\n  PASS\nWorker flags: --goal-id and --no-hitl exist in worker.py help\n  PASS\nScan dashboard: build_dashboard() function exists in scan.py\n  PASS\nTrust gating: importing and testing check_hitl_gate logic\n  PASS: all 4 gating scenarios correct\nBudget gate: check_budget blocks when spent >= limit\n  PASS: over-budget correctly blocked: goal budget $0.0100 already spent ($0.0500 used)\n\n--- Results: 5/5 passed ---",
+  "stderr": "",
+  "ran_at": "2026-06-27T09:38:16.857974+00:00"
+}

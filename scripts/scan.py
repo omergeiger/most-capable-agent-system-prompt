@@ -10,6 +10,7 @@ Usage: .venv/bin/python scripts/scan.py [--dry-run] [--age-days N]
 """
 import argparse
 import re
+import sqlite3
 import subprocess
 import sys
 from datetime import datetime, timezone, timedelta
@@ -18,6 +19,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).parent.parent
 PROJECTS_DIR = REPO_ROOT / "projects"
 LOGS_DIR = REPO_ROOT / "logs"
+DB_PATH = REPO_ROOT / "tasks.db"
 PYTHON = REPO_ROOT / ".venv" / "bin" / "python"
 CREATE_GOAL = REPO_ROOT / "scripts" / "create_goal.py"
 
@@ -103,15 +105,74 @@ def scan_handoff(path: Path, max_age_days: float) -> list[dict]:
     return flags
 
 
+def build_dashboard() -> str:
+    """Generate a markdown dashboard from tasks.db."""
+    if not DB_PATH.exists():
+        return "_tasks.db not found._\n"
+
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+
+    counts = dict(conn.execute("""
+        SELECT
+            COUNT(*) FILTER (WHERE status='pending')  AS pending,
+            COUNT(*) FILTER (WHERE status='locked')   AS locked,
+            COUNT(*) FILTER (WHERE status='running')  AS running,
+            COUNT(*) FILTER (WHERE status='done')     AS done,
+            COUNT(*) FILTER (WHERE status='failed')   AS failed,
+            COUNT(*) FILTER (WHERE status='blocked')  AS blocked,
+            COUNT(*) FILTER (WHERE status='cancelled') AS cancelled
+        FROM tasks
+    """).fetchone())
+
+    goals = conn.execute("""
+        SELECT g.id, g.description, g.status, g.trust_level,
+               COALESCE(g.budget_limit, 0) AS budget_limit,
+               COUNT(t.id) AS task_count,
+               COUNT(t.id) FILTER (WHERE t.status='done') AS done_count,
+               ROUND(SUM(COALESCE(t.cost_usd, 0)), 4) AS total_cost
+        FROM goals g
+        LEFT JOIN tasks t ON t.goal_id = g.id
+        GROUP BY g.id
+        ORDER BY g.created_at DESC
+        LIMIT 15
+    """).fetchall()
+
+    conn.close()
+
+    lines = [
+        f"## Dashboard - {utcnow().strftime('%Y-%m-%d %H:%M UTC')}\n",
+        "| Status | Count |",
+        "|---|---|",
+    ]
+    for k, v in counts.items():
+        lines.append(f"| {k} | {v} |")
+
+    lines.append("\n### Goals (recent 15)\n")
+    lines.append("| Goal | Trust | Budget | Progress | Cost |")
+    lines.append("|---|---|---|---|---|")
+    for g in goals:
+        desc = g["description"][:40] if g["description"] else ""
+        budget_str = f"${g['budget_limit']:.2f}" if g["budget_limit"] else "none"
+        progress = f"{g['done_count']}/{g['task_count']}"
+        cost = f"${g['total_cost'] or 0:.4f}"
+        lines.append(f"| {desc} | {g['trust_level']} | {budget_str} | {progress} | {cost} |")
+
+    return "\n".join(lines) + "\n"
+
+
 def write_scan_report(flags: list[dict], goals_created: list[str]) -> Path:
     LOGS_DIR.mkdir(exist_ok=True)
     ts = utcnow().strftime("%Y%m%dT%H%M%S")
     report_path = LOGS_DIR / f"scan_{ts}.md"
 
+    dashboard = build_dashboard()
+
     lines = [
         f"# Scan Report - {utcnow().strftime('%Y-%m-%d %H:%M UTC')}",
         f"\n**Flags found:** {len(flags)}  ",
         f"**Goals created:** {len(goals_created)}",
+        f"\n{dashboard}",
         "\n## Flags\n",
     ]
     if not flags:
