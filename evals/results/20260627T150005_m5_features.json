@@ -1,0 +1,8 @@
+{
+  "eval": "m5_features",
+  "passed": true,
+  "duration_s": 0.13,
+  "stdout": "=== M5 Features Eval ===\n\nIncidents table: exists and worker.py wires create_incident()\n  PASS: incidents table exists, create_incident() wired in worker.py\ncreate_incident.py: list/log/resolve commands available\n  PASS: all three commands work; log->resolve roundtrip verified\nrun_goal.sh: executable, contains create_goal + worker invocations\n  PASS: run_goal.sh is executable and contains required invocations\nexport_status.py: generates HTML dashboard at artifacts/dashboard.html\n  PASS: dashboard.html written (14602 bytes), all sections present\nAutonomous goal: at least one goal ran at autonomous trust level with done tasks\n  PASS: 1 autonomous goal(s) with done tasks found\n    2010c7e7 - 4 task(s) done\n\n--- Results: 5/5 passed ---",
+  "stderr": "",
+  "ran_at": "2026-06-27T15:00:05.176038+00:00"
+}

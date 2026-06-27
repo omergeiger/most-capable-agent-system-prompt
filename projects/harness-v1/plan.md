@@ -140,6 +140,27 @@ Worker ran real ops goal `2c0f463d` in guided mode. Budget cap triggered at task
 
 ---
 
+## Milestone 6 - Reliability, Resilience, and Automation
+
+**Target:** ~2026-07-28
+**Status:** complete (2026-06-27)
+
+### Scope
+
+- [x] `scripts/watchdog.py`: detect tasks stuck in `locked`/`running` > 30 min, reset to `pending`, auto-create medium-severity incident
+- [x] `scripts/escalate_incidents.py`: promote open incident severity (low->medium after 1hr, medium->high after 2hr); adds `escalated_at` and `escalation_count` columns
+- [x] `evals/m6_features.py`: 5/5 PASS - watchdog script check, watchdog functional, escalation script check, escalation functional, 8-thread concurrent claim atomicity
+- [x] Full eval suite: 5/5 PASS (m3 + m4 + m5 + m6 + task_claim_atomicity)
+
+### Definition of Done
+
+- `watchdog.py` resets any task stuck > 30 min and creates an incident (functional test verified)
+- `escalate_incidents.py` escalates open incidents by age threshold (functional test verified)
+- Concurrent-claim atomicity proven: 8 threads racing one task, exactly 1 wins (SQLite RETURNING atomicity confirmed)
+- Full eval suite 5/5 PASS
+
+---
+
 ## Architecture Summary
 
 ```
