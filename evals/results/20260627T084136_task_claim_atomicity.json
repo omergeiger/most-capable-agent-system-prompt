@@ -1,0 +1,8 @@
+{
+  "eval": "task_claim_atomicity",
+  "passed": true,
+  "duration_s": 0.04,
+  "stdout": "Schema test: checking tables and indexes\nPASS: all expected tables present: {'tasks', 'memory_entries', 'goals', 'incidents', 'sessions'}\nWAL mode: wal\nAtomicity test: 10 concurrent workers claiming one task\nDB: /Users/omergeiger/Projects/most-capable-agent-system-prompt/tasks.db\nTest task: ebabbbbb\nPASS: exactly 1 of 10 workers claimed the task\n\n--- Results ---\nSchema: PASS\nAtomicity: PASS\n\nAll evals PASS",
+  "stderr": "",
+  "ran_at": "2026-06-27T08:41:36.170707+00:00"
+}

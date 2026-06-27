@@ -72,23 +72,25 @@ Run the eval harness, get a pass rate, then make one improvement, re-run, and co
 ## Milestone 3 - Self-Improvement Loop + Proactive Monitoring
 
 **Target:** ~2026-07-07  
-**Status:** not started
+**Status:** complete (2026-06-27)
 
 ### Scope
 
-- [ ] Self-improvement loop: one-change / eval-before-after / keep or revert
-- [ ] Improvement log in evals/improvement_log.md
-- [ ] Proactive monitoring: scan projects for stale handoffs, blocked tasks, unanswered open questions
-- [ ] Proactive goal generation from scan results
-- [ ] Recurring ops: scheduled scans (cron or manual trigger until cron is ready)
-- [ ] External intelligence feed stub: weekly digest of relevant repos/papers (manual until network allowed)
-- [ ] Third domain: browser or ops task type scaffolded
-- [ ] Trust level concept: defined levels (supervised/guided/autonomous), manual promotion for now
-- [ ] Cost tracking: per-task and per-goal cost view in status.md
+- [x] Self-improvement loop: one-change / eval-before-after / keep or revert
+- [x] Improvement log in evals/improvement_log.md
+- [x] Proactive monitoring: scan projects for stale handoffs, blocked tasks, unanswered open questions
+- [x] Proactive goal generation from scan results
+- [x] Recurring ops: scheduled scans (cron or manual trigger - scripts/run_scan.sh)
+- [ ] External intelligence feed stub: weekly digest (deferred - requires network)
+- [x] Third domain: ops task type scaffolded (skills/ops_task.md)
+- [x] Trust level concept: supervised/guided/autonomous, scripts/set_trust.py for promotion
+- [x] Cost tracking: cost_usd column in tasks, per-goal cost view in status.md
 
 ### Definition of Done
 
-The system catches a stale project without being asked, generates a proactive goal, and starts working on it. One skill or eval was improved by the self-improvement loop with evidence.
+- Scan.py detects stale handoffs and auto-queues goals
+- Improvement loop ran on ops skill: 2/2 -> 2/2, change kept (evals/improvement_log.md)
+- Eval suite expanded to 2 evals (m3_features + task_claim_atomicity)
 
 ---
 

@@ -283,18 +283,19 @@ def verify_task(task: dict) -> tuple[bool, str, int, float]:
 
 def update_task(conn: sqlite3.Connection, task_id: str, status: str,
                 evidence: dict | None = None, artifacts: list | None = None,
-                tokens_used: int = 0) -> None:
+                tokens_used: int = 0, cost_usd: float = 0.0) -> None:
     conn.execute("""
         UPDATE tasks
         SET status = ?, evidence = ?, artifacts = ?, updated_at = ?,
             tokens_used = tokens_used + ?,
+            cost_usd = cost_usd + ?,
             completed_at = CASE WHEN ? IN ('done', 'failed') THEN ? ELSE completed_at END
         WHERE id = ?
     """, (
         status,
         json.dumps(evidence) if evidence else None,
         json.dumps(artifacts) if artifacts else None,
-        utcnow(), tokens_used, status, utcnow(), task_id,
+        utcnow(), tokens_used, cost_usd, status, utcnow(), task_id,
     ))
     conn.commit()
 
@@ -351,7 +352,7 @@ def run_once(conn: sqlite3.Connection, specific_task_id: str | None = None) -> b
         artifacts_list = [str(ARTIFACTS_DIR / task_id)]
 
         update_task(conn, task_id, final_status, evidence=evidence, artifacts=artifacts_list,
-                    tokens_used=total_tokens)
+                    tokens_used=total_tokens, cost_usd=total_cost)
         append_episodic_memory(task, verified, reason)
         cost_str = f"${total_cost:.4f}" if total_cost else "n/a"
         print(f"[worker] Task {task_id[:8]} -> {final_status}. Verified: {verified}. Tokens: {total_tokens} ({cost_str})")

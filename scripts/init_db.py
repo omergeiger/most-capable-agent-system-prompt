@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS goals (
     description TEXT NOT NULL,
     project_id TEXT,
     status TEXT NOT NULL DEFAULT 'active',
+    trust_level TEXT NOT NULL DEFAULT 'supervised',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
@@ -40,6 +41,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     risk_level TEXT NOT NULL DEFAULT 'low',
     budget_limit REAL,
     tokens_used INTEGER DEFAULT 0,
+    cost_usd REAL DEFAULT 0.0,
     attempts INTEGER NOT NULL DEFAULT 0,
     verification_plan TEXT,
     evidence TEXT,
@@ -96,10 +98,30 @@ CREATE INDEX IF NOT EXISTS idx_memory_type ON memory_entries(type);
 """
 
 
+MIGRATIONS = [
+    "ALTER TABLE tasks ADD COLUMN cost_usd REAL DEFAULT 0.0",
+    "ALTER TABLE goals ADD COLUMN trust_level TEXT NOT NULL DEFAULT 'supervised'",
+]
+
+
+def apply_migrations(conn: sqlite3.Connection) -> None:
+    existing_task_cols = {row[1] for row in conn.execute("PRAGMA table_info(tasks)")}
+    existing_goal_cols = {row[1] for row in conn.execute("PRAGMA table_info(goals)")}
+    for stmt in MIGRATIONS:
+        col = stmt.split("ADD COLUMN")[1].strip().split()[0]
+        table = stmt.split("TABLE")[1].strip().split()[0]
+        existing = existing_task_cols if table == "tasks" else existing_goal_cols
+        if col not in existing:
+            conn.execute(stmt)
+            print(f"Migration applied: {stmt}")
+
+
 def init_db(db_path: Path = DB_PATH) -> None:
     print(f"Initializing database at: {db_path}")
     conn = sqlite3.connect(str(db_path))
     conn.executescript(SCHEMA)
+    apply_migrations(conn)
+    conn.commit()
     conn.close()
     print("Done. Tables:", ", ".join(get_tables(db_path)))
 

@@ -70,11 +70,27 @@ def get_failed_tasks(conn: sqlite3.Connection) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def get_cost_by_goal(conn: sqlite3.Connection) -> list[dict]:
+    rows = conn.execute("""
+        SELECT g.id, g.description, g.status, g.trust_level,
+               COUNT(t.id) AS task_count,
+               SUM(COALESCE(t.tokens_used, 0)) AS total_tokens,
+               ROUND(SUM(COALESCE(t.cost_usd, 0)), 4) AS total_cost_usd
+        FROM goals g
+        LEFT JOIN tasks t ON t.goal_id = g.id
+        GROUP BY g.id
+        ORDER BY g.created_at DESC
+        LIMIT 10
+    """).fetchall()
+    return [dict(r) for r in rows]
+
+
 def render_status(conn: sqlite3.Connection, project: str) -> str:
     counts = get_task_counts(conn)
     active = get_active_tasks(conn)
     done = get_recent_done(conn)
     failed = get_failed_tasks(conn)
+    costs = get_cost_by_goal(conn)
 
     lines = [
         f"# Status - {project}",
@@ -108,6 +124,19 @@ def render_status(conn: sqlite3.Connection, project: str) -> str:
             lines.append(f"- `{t['id'][:8]}` {t['description'][:60]} (attempts: {t['attempts']})")
     else:
         lines.append("_None._")
+
+    lines.append("\n## Cost by Goal (recent 10)\n")
+    if costs:
+        lines.append("| Goal | Trust | Tasks | Tokens | Cost USD |")
+        lines.append("|---|---|---|---|---|")
+        for g in costs:
+            desc = g['description'][:45] if g['description'] else ''
+            lines.append(
+                f"| {desc} | {g['trust_level']} | {g['task_count']} "
+                f"| {g['total_tokens'] or 0:,} | ${g['total_cost_usd'] or 0:.4f} |"
+            )
+    else:
+        lines.append("_No goals yet._")
 
     return "\n".join(lines) + "\n"
 

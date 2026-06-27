@@ -9,3 +9,12 @@
 **Score after:** 1/1  
 **Decision:** KEEP  
 **Reason:** Score held or improved (1/1 -> 1/1)  
+
+## 2026-06-27T08:41:36Z - KEEP
+
+**Target:** `skills/ops_task.md`  
+**Change:** Add a 'Scope Boundaries' section after the Mindset section that lists what ops_task should NOT do: no schema migrations, no package installs, no git operations. This prevents scope creep into other task domains.  
+**Score before:** 2/2  
+**Score after:** 2/2  
+**Decision:** KEEP  
+**Reason:** Score held or improved (2/2 -> 2/2)  
