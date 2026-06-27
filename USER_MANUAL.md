@@ -173,7 +173,10 @@ pending -> locked -> running -> done
                  \-> pending (retry, up to 3x)
                  \-> failed (after 3 attempts)
                  \-> blocked (budget exceeded)
+                 \-> cancelled (manually or by scan cleanup)
 ```
+
+When all tasks for a goal reach a terminal state (`done`, `failed`, `blocked`, or `cancelled`), the worker automatically marks the goal `complete`.
 
 ### Skills
 
@@ -345,8 +348,10 @@ The dashboard shows: task board counts, goal list with progress and cost, open i
 
 ### Resolving an Incident
 
+`<incident-prefix>` is the first 8 or more characters of the incident UUID printed when it was created. Any unique prefix works.
+
 ```bash
-.venv/bin/python scripts/create_incident.py resolve <incident-prefix> \
+.venv/bin/python scripts/create_incident.py resolve 4a8c2374 \
   --root-cause "worker timeout caused partial write" \
   --remediation "re-ran task, verified output, watchdog reset confirmed"
 ```
@@ -491,6 +496,8 @@ What happens:
 6. Logs the result to `evals/improvement_log.md`
 
 The loop only touches the file you specify. It never self-modifies worker.py, the database schema, or eval files.
+
+**Important limitation:** The evals test harness infrastructure - script existence, schema columns, logic gates. They do not measure Claude Code output quality. A skill file change that makes task execution worse will still show the same eval score and be kept. The loop is a "do no harm" guard, not a genuine quality signal. To make self-improvement meaningful, a held-out set of real tasks with known correct outputs is needed as a quality eval layer.
 
 ### Improvement Log
 
