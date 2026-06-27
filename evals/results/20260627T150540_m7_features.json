@@ -1,0 +1,8 @@
+{
+  "eval": "m7_features",
+  "passed": true,
+  "duration_s": 0.06,
+  "stdout": "=== M7 Features Eval ===\n\nsweep_artifacts.py: exists with dry-run, age filter, active-task guard\n  PASS: sweep_artifacts.py present with all required logic tokens\nsweep functional: old UUID artifact dir gets deleted\n[sweep] Found 1 artifact dir(s) older than 7 days (0KB total):\n  f034b5af...  2026-06-17  36B\n  -> deleted f034b5af...\n[sweep] Done: 1 directory removed (0KB freed).\n  PASS: old artifact dir f034b5af... was swept\nsweep dry-run: reports old dir but does NOT delete it\n[sweep] Found 1 artifact dir(s) older than 7 days (0KB total):\n  dc4682c5...  2026-06-17  36B\n[sweep] --dry-run: no files deleted.\n  PASS: dir reported (dc4682c5...), NOT deleted (dry-run respected)\nschedule.py: exists, defines all three scheduled jobs\n  PASS: schedule.py present with all three jobs and required commands\nschedule generate: writes valid plist files to artifacts/launchd/\n  PASS: 3 plist files written to artifacts/launchd/ - valid XML with correct labels\n\n--- Results: 5/5 passed ---",
+  "stderr": "",
+  "ran_at": "2026-06-27T15:05:40.129445+00:00"
+}

@@ -161,6 +161,28 @@ Worker ran real ops goal `2c0f463d` in guided mode. Budget cap triggered at task
 
 ---
 
+## Milestone 7 - Ops Hygiene and Scheduling
+
+**Target:** ~2026-08-04
+**Status:** complete (2026-06-27)
+
+### Scope
+
+- [x] `scripts/sweep_artifacts.py`: delete UUID task artifact dirs older than N days (default 7); skips active tasks; supports `--dry-run`
+- [x] `scripts/schedule.py`: generate launchd plists for watchdog (30 min), scan (daily 08:00), escalate (hourly); `generate` / `install` / `uninstall` / `status` commands
+- [x] `artifacts/launchd/`: three plist files written by `schedule.py generate`
+- [x] `evals/m7_features.py`: 5/5 PASS (sweep script, sweep functional, sweep dry-run, schedule script, schedule generate)
+- [x] Full eval suite: 6/6 PASS (m3 + m4 + m5 + m6 + m7 + task_claim_atomicity)
+
+### Definition of Done
+
+- `sweep_artifacts.py` removes old artifact dirs without touching active tasks or non-UUID files
+- `schedule.py generate` produces valid plist XML for all three recurring jobs
+- `schedule.py install` available for human to trigger when ready to wire launchd
+- Full eval suite 6/6 PASS
+
+---
+
 ## Architecture Summary
 
 ```

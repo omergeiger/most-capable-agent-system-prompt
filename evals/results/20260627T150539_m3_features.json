@@ -1,0 +1,8 @@
+{
+  "eval": "m3_features",
+  "passed": true,
+  "duration_s": 0.04,
+  "stdout": "=== M3 Features Eval ===\n\nColumn check: cost_usd in tasks, trust_level in goals\n  PASS: both columns present\nTrust level default: goals.trust_level defaults to 'supervised'\n  PASS: default is 'supervised'\nOps skill: skills/ops_task.md exists with required sections\n  PASS: all required sections present\nset_trust.py: script exists and runs without error\n  PASS: set_trust.py list ran successfully\nrun_scan.sh: script exists and is executable\n  PASS: run_scan.sh exists and is executable\n\n--- Results: 5/5 passed ---",
+  "stderr": "",
+  "ran_at": "2026-06-27T15:05:39.839780+00:00"
+}

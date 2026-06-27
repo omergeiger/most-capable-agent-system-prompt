@@ -1,0 +1,8 @@
+{
+  "eval": "m6_features",
+  "passed": true,
+  "duration_s": 0.04,
+  "stdout": "=== M6 Features Eval ===\n\nwatchdog.py: exists and contains required logic\n  PASS: watchdog.py present with all required logic tokens\nwatchdog functional: stuck task gets reset to pending + incident created\n[watchdog] Found 1 stuck task(s) (>30 min in locked/running):\n  30bad99c  status=locked  since 2026-06-27T13:05:40  [eval-m6] watchdog test stuck task\n  -> reset to pending, incident fef4985a created\n[watchdog] Done: 1 task(s) reset, 1 incident(s) created.\n  PASS: task reset to pending, incident created (caught in affected list: True)\nescalate_incidents.py: exists with severity escalation logic\n  PASS: escalate_incidents.py present with all required logic tokens\nescalation functional: old low-severity incident escalates to medium\n[escalate] Found 1 incident(s) to escalate:\n  1a3ef219  low      since 2026-06-27T12:05:40  [eval-m6] escalation test incident\n  -> 1a3ef219: low -> medium\n[escalate] Done: 1 incident(s) escalated.\n  PASS: incident escalated low -> medium, escalation_count incremented\nConcurrent claim atomicity: N threads race to claim same task, exactly one wins\n  PASS: 1 thread claimed, 7 got None (8 threads raced)\n\n--- Results: 5/5 passed ---",
+  "stderr": "",
+  "ran_at": "2026-06-27T15:05:40.073870+00:00"
+}
