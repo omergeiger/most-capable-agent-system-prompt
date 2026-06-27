@@ -397,3 +397,52 @@
 **Task:** List all directories under artifacts/ whose modification time is older than 3 days and record their names and ages
 **Verified:** PASS
 **Reason:** The task correctly reported zero stale directories. Independent verification using `find artifacts/ -maxdepth 1 -mindepth 1 -type d` with mtime inspection confirms that all directories in artifacts/ have modification times from 2026-06-26 or 2026-06-27 - the oldest being d9187628 at 2026-06-26 23:20, which is approximately 13 hours old (well under the 3-day threshold). The `find -mtime +3` command independently returned zero results, matching the completion note's claim. The completion note listed 32 directories while live `ls -lt` shows 33 - the extra directory (ec1fc507, mtime 2026-06-27 12:35) was either created concurrently or immediately after the task ran and is not stale, so the core finding is unaffected. Mtimes in the completion note's cross-check table match the live filesystem exactly for all directories present at execution time.
+
+## 2026-06-27T10:20:45.853182+00:00 - Task c7278421
+
+**Goal:** 2c0f463d
+**Task:** Run Python syntax check on every .py file under scripts/ and report any files with syntax errors
+**Verified:** PASS
+**Reason:** I independently enumerated all .py files under scripts/ using `find` and confirmed there are exactly 9 files: claim_task.py, create_goal.py, improve.py, init_db.py, run_evals.py, scan.py, set_trust.py, update_status.py, worker.py. I then ran `python3 -m py_compile` on each file independently (not trusting the completion note alone) and confirmed all 9 pass with no syntax errors. The completion_note.md lists the same 9 files and the same PASS result for each, which matches my independent check exactly. No files were missed and no errors were found.
+
+## 2026-06-27T10:22:57.621657+00:00 - Task e6f5a77f
+
+**Goal:** 2c0f463d
+**Task:** Produce a single ops report summarizing venv health, dependency importability, script syntax results, and stale artifact directories
+**Verified:** PASS
+**Reason:** The ops report exists at `projects/harness-v1/artifacts/ops_report_2026-06-27.md` and contains a clearly labelled section for each of the four required audit areas (venv health, dependency importability, script syntax, stale artifact directories). Cross-checking each section against the four source task completion notes confirms the findings are accurately reported: venv section matches the 6-package pip list and Python 3.13.9 from task 53210343; dependency section matches the 11 stdlib imports and 9-script scan from task ec1fc507; syntax section matches the 9/9 PASS result from task c7278421; and the stale-artifact section matches the 32-directory scan with 0 stale entries and correct oldest-directory timestamp from task ccef1314. All four areas record PASS verdicts consistent with the source evidence.
+
+## 2026-06-27T10:26:39.301165+00:00 - Task 562e9af4
+
+**Goal:** 2010c7e7
+**Task:** List all Python files in the evals/ directory and record their paths
+**Verified:** PASS
+**Reason:** The completion_note.md lists three Python files in evals/ (m4_features.py, task_claim_atomicity.py, m3_features.py). Running `find evals/ -name '*.py' -not -path '*/__pycache__/*'` independently produces the exact same three paths in the same directory, with no additional files and no missing files. The recorded paths match the actual filesystem state.
+
+## 2026-06-27T10:27:17.414116+00:00 - Task 562e9af4
+
+**Goal:** 2010c7e7
+**Task:** List all Python files in the evals/ directory and record their paths
+**Verified:** PASS
+**Reason:** The completion_note.md lists three Python files in evals/ (m4_features.py, task_claim_atomicity.py, m3_features.py). Running `find evals/ -name '*.py' -not -path '*/__pycache__/*'` independently produces the exact same three paths in the same directory, with no additional files and no missing files. The recorded paths match the actual filesystem state.
+
+## 2026-06-27T10:27:38.824364+00:00 - Task fb2c8ce5
+
+**Goal:** 2010c7e7
+**Task:** Check each eval script for Python syntax validity using py_compile or ast.parse
+**Verified:** PASS
+**Reason:** All three eval scripts present in the evals/ directory (m4_features.py, task_claim_atomicity.py, m3_features.py) were independently checked for Python syntax validity using ast.parse. Each file parsed without error, confirming a PASS verdict. A find command confirmed no additional .py files exist in evals/ that were omitted from the completion note, so coverage is complete and no file is missing from results.
+
+## 2026-06-27T10:28:15.191919+00:00 - Task 7c5254f7
+
+**Goal:** 2010c7e7
+**Task:** Inspect each eval script for the presence of a top-level main() function definition
+**Verified:** PASS
+**Reason:** The completion note covers all three .py files under evals/ and provides an explicit YES/NO verdict for each. Independent grep of `^def main(` on all three files confirms every verdict is accurate: m3_features.py has `def main() -> bool:` at line 113, m4_features.py has `def main() -> bool:` at line 169, and task_claim_atomicity.py has no top-level main() definition. The verification plan is fully satisfied.
+
+## 2026-06-27T10:30:40.230014+00:00 - Task 5ef188db
+
+**Goal:** 2010c7e7
+**Task:** Write artifacts/eval_audit_2026-06-27.md summarizing each file with its syntax verdict, main() presence, and overall PASS/FAIL
+**Verified:** PASS
+**Reason:** The file `artifacts/eval_audit_2026-06-27.md` exists and contains one entry per file in `evals/` (5 entries: 3 Python, 2 Markdown). All syntax verdicts were independently confirmed via `python3 -m py_compile` - all three Python files pass. The `def main()` claims were confirmed with `grep -n "def main"`: m3_features.py has it at line 113, m4_features.py at line 169, and task_claim_atomicity.py has no `def main()` at all. The PASS/FAIL logic in the audit is correct and consistent with these findings. Markdown files are correctly excluded from syntax and main() checks and marked N/A. The document is well-structured, readable Markdown with a summary table and per-file detail section.

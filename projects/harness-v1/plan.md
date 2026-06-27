@@ -116,6 +116,30 @@ Worker ran real ops goal `2c0f463d` in guided mode. Budget cap triggered at task
 
 ---
 
+## Milestone 5 - Incidents, Unattended Execution, and Autonomous Run
+
+**Target:** ~2026-07-21
+**Status:** complete (2026-06-27)
+
+### Scope
+
+- [x] Incident tracking: `incidents` table, auto-created on task failure with reason + context
+- [x] `scripts/create_incident.py`: CLI to log incidents and link to task/goal
+- [x] `scripts/run_goal.sh`: unattended goal runner (create goal + worker in one command)
+- [x] `scripts/export_status.py`: HTML dashboard export to `artifacts/dashboard.html`
+- [x] Autonomous goal `2010c7e7`: eval-audit, 4/4 tasks done, zero HITL gates triggered
+- [x] `evals/m5_features.py`: 5/5 PASS; full suite 4/4 PASS (m3 + m4 + m5 + atomicity)
+
+### Definition of Done
+
+- Incident tracking wired in worker.py for task failure and worker exceptions
+- `run_goal.sh` accepts goal description, sets trust, optionally sets budget, runs worker
+- `artifacts/dashboard.html` exported (14KB, all sections: task board, goals, incidents, recent tasks)
+- Autonomous goal `2010c7e7` ran 4 tasks without any HITL gate
+- Eval suite: 4/4 PASS
+
+---
+
 ## Architecture Summary
 
 ```

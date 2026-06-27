@@ -315,6 +315,21 @@ def append_episodic_memory(task: dict, verified: bool, reason: str) -> None:
         f.write(entry)
 
 
+def create_incident(conn: sqlite3.Connection, task: dict, severity: str,
+                    title: str, description: str) -> str:
+    """Insert an incident record linked to task/goal. Returns incident id."""
+    incident_id = str(uuid.uuid4())
+    now = utcnow()
+    conn.execute(
+        """INSERT INTO incidents (id, severity, title, description, task_id, goal_id, status, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, 'open', ?)""",
+        (incident_id, severity, title, description,
+         task.get("id"), task.get("goal_id"), now)
+    )
+    conn.commit()
+    return incident_id
+
+
 def get_goal(conn: sqlite3.Connection, goal_id: str) -> dict | None:
     row = conn.execute(
         "SELECT * FROM goals WHERE id = ?", (goal_id,)
@@ -435,8 +450,21 @@ def run_once(conn: sqlite3.Connection, specific_task_id: str | None = None,
         print(f"[worker] Task {task_id[:8]} -> {final_status}. Verified: {verified}. Tokens: {total_tokens} ({cost_str})")
         print(f"         {reason}")
 
+        if final_status == "failed":
+            inc_id = create_incident(
+                conn, task, severity="medium",
+                title=f"Task failed after {task['attempts']} attempt(s): {task['description'][:80]}",
+                description=f"Verification reason: {reason}\nExecution success: {success}\nVerified: {verified}",
+            )
+            print(f"[worker] Incident created: {inc_id[:8]}")
+
     except Exception as e:
         update_task(conn, task_id, "failed", evidence={"error": str(e)})
+        create_incident(
+            conn, task, severity="high",
+            title=f"Worker exception on task {task_id[:8]}: {type(e).__name__}",
+            description=str(e),
+        )
         print(f"[worker] Task {task_id[:8]} raised: {e}")
 
     return True
