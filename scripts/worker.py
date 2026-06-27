@@ -367,6 +367,22 @@ def check_hitl_gate(task: dict, goal: dict | None, no_hitl: bool) -> tuple[bool,
     return False, "supervised trust: HITL required (pass --no-hitl to override)"
 
 
+def maybe_complete_goal(conn: sqlite3.Connection, goal_id: str | None) -> None:
+    """Mark a goal complete when all its tasks are in a terminal state."""
+    if not goal_id:
+        return
+    row = conn.execute(
+        "SELECT COUNT(*) FROM tasks WHERE goal_id = ? AND status NOT IN ('done', 'failed', 'cancelled', 'blocked')",
+        (goal_id,)
+    ).fetchone()
+    if row and row[0] == 0:
+        conn.execute(
+            "UPDATE goals SET status='complete', updated_at=? WHERE id=? AND status='active'",
+            (utcnow(), goal_id)
+        )
+        conn.commit()
+
+
 def check_budget(conn: sqlite3.Connection, task: dict, goal: dict | None) -> tuple[bool, str]:
     """Return (within_budget, reason). Blocks tasks if goal budget would be exceeded."""
     if goal is None:
@@ -445,6 +461,7 @@ def run_once(conn: sqlite3.Connection, specific_task_id: str | None = None,
 
         update_task(conn, task_id, final_status, evidence=evidence, artifacts=artifacts_list,
                     tokens_used=total_tokens, cost_usd=total_cost)
+        maybe_complete_goal(conn, task.get("goal_id"))
         append_episodic_memory(task, verified, reason)
         cost_str = f"${total_cost:.4f}" if total_cost else "n/a"
         print(f"[worker] Task {task_id[:8]} -> {final_status}. Verified: {verified}. Tokens: {total_tokens} ({cost_str})")
@@ -460,6 +477,7 @@ def run_once(conn: sqlite3.Connection, specific_task_id: str | None = None,
 
     except Exception as e:
         update_task(conn, task_id, "failed", evidence={"error": str(e)})
+        maybe_complete_goal(conn, task.get("goal_id"))
         create_incident(
             conn, task, severity="high",
             title=f"Worker exception on task {task_id[:8]}: {type(e).__name__}",
